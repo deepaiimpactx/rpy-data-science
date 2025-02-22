@@ -1,0 +1,121 @@
+---
+title: "Session 1"
+---
+
+```{r}
+#install.packages("tidyverse")
+library(tidyverse)
+library(ggplot2)
+library(ggthemes)
+library(palmerpenguins)
+```
+
+```{r}
+penguins
+summary(penguins)
+glimpse(penguins)
+```
+
+```{r}
+seq(from = 1, to = 10)
+seq(1,10)
+
+```
+
+```{r}
+#snake case
+i_love_this_case <- 5
+i_love_this_case
+```
+```{r}
+glimpse(penguins)
+```
+```{r}
+ggplot(data = penguins,
+       mapping = aes(x = flipper_length_mm , y = body_mass_g)
+)+
+  geom_point()
+```
+
+
+```{r}
+#visualization
+ggplot(data = penguins,
+       mapping = aes(x = flipper_length_mm , y = body_mass_g, color = species)
+       )+
+  geom_point()
+```
+
+```{r}
+ggplot(data = penguins,
+       mapping = aes(x = flipper_length_mm , y = body_mass_g)
+       )+
+  geom_point(mapping = aes(color = species, shape = species))+
+  geom_smooth(method = "lm")
+```
+
+```{r}
+ggplot(data = penguins,
+       mapping = aes(x = flipper_length_mm , y = body_mass_g)
+       )+
+  geom_point(mapping = aes(color = species, shape = species))+
+  geom_smooth(method = "lm")+
+  labs(
+    title = "Bodymass vs flipper length",
+    subtitle = "first plot of MIS/MIC data sessions batch",
+    x = "Flipper Length", y = "Body Mass",
+    color = "Species", shape = "Species"
+  )+
+  scale_color_colorblind()
+```
+
+```{r}
+ggplot(penguins, aes(x = fct_infreq(species)))+
+  geom_bar(mapping = aes(color = species, fill = species))+
+  labs(
+    title = "distributions of penguins",
+    subtitle = "second plot of MIS/MIC data sessions batch",
+    x = "Species", y = "Observations count"
+  )
+```
+
+```{r}
+ggplot(penguins, aes(x = body_mass_g, color = species))+
+  geom_density(mapping = aes(fill = species))
+ggplot(penguins, aes(x = body_mass_g, color = species))+
+  geom_density(linewidth = 0.9)
+```
+
+```{r}
+ggplot(penguins, aes(x = body_mass_g, color = species, fill = species))+
+  geom_density(alpha = 0.5)
+```
+```{r}
+library(nycflights13)
+```
+
+```{r}
+glimpse(flights)
+```
+
+```{r}
+flights |>
+  filter(dep_delay > 250) |>
+  count()
+```
+
+```{r}
+flights |>
+  filter (dest == 'MIA') |>
+  group_by(year, month, day) |>
+  summarize(
+    arr_delay = mean(arr_delay, na.rm = TRUE)
+  )
+```
+
+```{r}
+flights |>
+  filter(month == 1 & day == 11) |>
+  count()
+```
+

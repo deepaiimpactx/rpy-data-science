@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>List of HTML Files</title>
+</head>
+<body>
+<h1>List of HTML Files</h1>
+<ul>
+    {% comment %}
+    Loop through all static files processed by Jekyll.
+    For each file, check if it is in the /htmls folder and has an .html extension.
+    {% endcomment %}
+    {% for file in site.static_files %}
+    {% if file.path contains '/htmls/' and file.extname == '.html' %}
+    <li><a href="{{ file.path }}">{{ file.name }}</a></li>
+    {% endif %}
+    {% endfor %}
+</ul>
+</body>
+</html>
