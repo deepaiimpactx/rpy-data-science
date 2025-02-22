@@ -28,7 +28,7 @@ jobs:
       # Install R packages required for rendering
       - name: Install R packages
         run: |
-          Rscript -e "install.packages('rmarkdown', repos = 'https://cran.r-project.org')"
+          Rscript -e "install.packages('rmarkdown', 'tidyverse', 'ggplot2', 'ggthemes', 'palmerpenguins', 'nycflights13' repos = 'https://cran.r-project.org')"
 
       # Render each R Markdown file in /rmds to HTML files in /htmls
       - name: Render R Markdown Files to HTML
