@@ -3,57 +3,53 @@ name: Render Rmd, Build Jekyll Site & Deploy to GitHub Pages
 on:
   push:
     branches: [ main ]
+    paths:
+      - rmds/**       # Trigger when any file in rmds/ changes
   pull_request:
     branches: [ main ]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  render_and_deploy:
+    runs-on: macOS-latest
 
     steps:
-      # Checkout your repository
+      # 1. Checkout the repository
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
 
-      # Set up R (for rendering Rmd files)
+      # 2. Set up R, Pandoc, and TinyTeX (for rendering R Markdown)
       - name: Set up R
-        uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: 'latest'
+        uses: r-lib/actions/setup-r@v1
+      - name: Set up Pandoc
+        uses: r-lib/actions/setup-pandoc@v1
+      - name: Set up TinyTeX
+        uses: r-lib/actions/setup-tinytex@v1
 
-      # Install Pandoc (required by rmarkdown)
-      - name: Install Pandoc
-        run: sudo apt-get update && sudo apt-get install -y pandoc
-
-      # Install R packages required for rendering
+      # 3. Install required R packages (including tidyverse and others your Rmd files need)
       - name: Install R packages
         run: |
-          Rscript -e "install.packages(c('rmarkdown', 'tidyverse', 'ggplot2', 'ggthemes', 'palmerpenguins', 'nycflights13'), repos = 'https://cran.r-project.org')"
+          Rscript -e 'install.packages(c("rmarkdown", "tidyverse", "ggplot2", "ggthemes", "palmerpenguins", "nycflights13"), repos="https://cran.r-project.org")'
 
-      # Render each R Markdown file in /rmds to HTML files in /htmls
+      # 4. Render each R Markdown file in /rmds to HTML in /htmls
       - name: Render R Markdown Files to HTML
         run: |
           mkdir -p htmls
           for file in rmds/*.Rmd; do
             echo "Rendering $file..."
-            Rscript -e "rmarkdown::render('$file', output_dir = 'htmls')"
+            Rscript -e "rmarkdown::render('$file', output_format = 'html_document', output_dir = 'htmls')"
           done
 
-      # Set up Ruby and install Jekyll dependencies
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.1'
+      # 5. Install Bundler and Jekyll dependencies (macOS comes with Ruby pre-installed)
       - name: Install Bundler and Jekyll
         run: |
           gem install bundler
           bundle install
 
-      # Build the Jekyll site (this processes your Liquid templates)
+      # 6. Build the Jekyll site (processes index.html with Liquid to list HTML files in /htmls)
       - name: Build Jekyll Site
         run: bundle exec jekyll build
 
-      # Deploy the built site (from _site) to GitHub Pages
+      # 7. Deploy the built site (from _site) to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
