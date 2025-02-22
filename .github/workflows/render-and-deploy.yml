@@ -21,6 +21,10 @@ jobs:
         with:
           r-version: 'latest'
 
+      # Install Pandoc (required by rmarkdown)
+      - name: Install Pandoc
+        run: sudo apt-get update && sudo apt-get install -y pandoc
+
       # Install R packages required for rendering
       - name: Install R packages
         run: |
