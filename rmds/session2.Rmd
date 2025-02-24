@@ -1,121 +1,145 @@
 ---
-title: "Session 1"
+title: "Session2"
 ---
-
+       
 ```{r}
-#install.packages("tidyverse")
 library(tidyverse)
-library(ggplot2)
-library(ggthemes)
-library(palmerpenguins)
-```
-
-```{r}
-penguins
-summary(penguins)
-glimpse(penguins)
-```
-
-```{r}
-seq(from = 1, to = 10)
-seq(1,10)
-
-```
-
-```{r}
-#snake case
-i_love_this_case <- 5
-i_love_this_case
-```
-```{r}
-glimpse(penguins)
-```
-```{r}
-ggplot(data = penguins,
-       mapping = aes(x = flipper_length_mm , y = body_mass_g)
-)+
-  geom_point()
-```
-
-
-```{r}
-#visualization
-ggplot(data = penguins,
-       mapping = aes(x = flipper_length_mm , y = body_mass_g, color = species)
-       )+
-  geom_point()
-```
-
-```{r}
-ggplot(data = penguins,
-       mapping = aes(x = flipper_length_mm , y = body_mass_g)
-       )+
-  geom_point(mapping = aes(color = species, shape = species))+
-  geom_smooth(method = "lm")
-```
-
-```{r}
-ggplot(data = penguins,
-       mapping = aes(x = flipper_length_mm , y = body_mass_g)
-       )+
-  geom_point(mapping = aes(color = species, shape = species))+
-  geom_smooth(method = "lm")+
-  labs(
-    title = "Bodymass vs flipper length",
-    subtitle = "first plot of MIS/MIC data sessions batch",
-    x = "Flipper Length", y = "Body Mass",
-    color = "Species", shape = "Species"
-  )+
-  scale_color_colorblind()
-```
-
-```{r}
-ggplot(penguins, aes(x = fct_infreq(species)))+
-  geom_bar(mapping = aes(color = species, fill = species))+
-  labs(
-    title = "distributions of penguins",
-    subtitle = "second plot of MIS/MIC data sessions batch",
-    x = "Species", y = "Observations count"
-  )
-```
-
-```{r}
-ggplot(penguins, aes(x = body_mass_g, color = species))+
-  geom_density(mapping = aes(fill = species))
-ggplot(penguins, aes(x = body_mass_g, color = species))+
-  geom_density(linewidth = 0.9)
-```
-
-```{r}
-ggplot(penguins, aes(x = body_mass_g, color = species, fill = species))+
-  geom_density(alpha = 0.5)
-```
-```{r}
 library(nycflights13)
-```
-
-```{r}
 glimpse(flights)
 ```
 
 ```{r}
+#correct format
 flights |>
-  filter(dep_delay > 250) |>
+  filter(month == 1 | month == 2) |>
+  group_by(month) |>
+  count()
+```
+
+
+```{r}
+#wrong format
+flights |>
+  filter(month == 1 | 2)|>
+  group_by(month) |>
+  count()
+```
+
+```{r}
+#format for one month filtering
+flights |>
+  filter(month == 1)|>
+  group_by(month) |>
   count()
 ```
 
 ```{r}
 flights |>
-  filter (dest == 'MIA') |>
-  group_by(year, month, day) |>
-  summarize(
-    arr_delay = mean(arr_delay, na.rm = TRUE)
+  filter(month == 1 | month == 2) |>
+  select(month, origin, dest, dep_time, arr_time, arr_delay) |>
+  arrange(dep_time) |>
+  distinct(origin,dest, .keep_all = TRUE)
+
+
+```
+
+```{r}
+flights |>
+  count(origin, dest, sort = TRUE)
+```
+
+```{r}
+flights_updated <- 
+flights %>%
+  mutate(
+    diff = dep_delay - arr_delay,
+    speed = distance / air_time * 3600,
+    .before = 1
+  )
+flights_updated
+```
+
+```{r}
+flights_updated <- 
+flights %>%
+  mutate(
+    diff = dep_delay - arr_delay,
+    speed = distance / air_time * 3600,
+    .after = dep_time
+  )
+flights_updated
+```
+
+```{r}
+flights_updated |>
+  select(!year : sched_dep_time)
+```
+
+```{r}
+flights |>
+  rename(delay = dep_delay)
+```
+
+```{r}
+table1 |>
+  mutate(rate_of_spread = cases / population * 5000) |>
+  group_by(year) |>
+  summarize(total_spread = mean(rate_of_spread))
+```
+
+```{r}
+ggplot(table1, aes(x = year, y = cases))+
+  geom_line(aes(group = country))+
+  geom_point(aes(color = country, shape = country))+
+  scale_x_continuous(breaks = c(1999,2000))
+```
+
+```{r}
+mpg |>
+  select(class) |>
+  group_by(class) |>
+  count()
+
+#mpg$class
+```
+
+```{r}
+ggplot(mpg, aes(x = displ, y = hwy))+
+  geom_point(color = "blue")
+```
+
+```{r}
+ggplot(mpg, aes(x = displ, y = hwy))+
+  geom_point()+
+  geom_point(
+    data = mpg |> filter(class == "2seater"),
+    color = "red"
+  )+
+  geom_point(
+    data = mpg |> filter(class == "2seater"),
+    shape = "circle open", size = 3, color = "red"
+  )
+  
+```
+
+```{r}
+ggplot(mpg, aes(x = displ, y = hwy, color = class))+
+  geom_point()+
+  facet_grid(drv ~ cyl, scales = "free")
+```
+
+```{r}
+plt <-
+ggplot(data = mpg) +
+  geom_bar(
+    mapping = aes(x = manufacturer, fill = manufacturer),
+    show.legend = FALSE,
+    width = 1
   )
 ```
 
 ```{r}
-flights |>
-  filter(month == 1 & day == 11) |>
-  count()
+plt + coord_flip()
+plt + coord_radial() + theme_classic()
 ```
 
