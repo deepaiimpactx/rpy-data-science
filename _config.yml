@@ -1,4 +1,0 @@
-title: "My Jekyll Site"
-# Tell Jekyll to process the /htmls folder as static files:
-include:
-  - htmls

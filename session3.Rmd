@@ -1,0 +1,188 @@
+---
+title: "Session3"
+output: Plot one vs two variables/Preliminary intro to ML using R (native)
+---
+
+
+```{r}
+library(ggpubr)
+diamonds
+
+```
+
+```{r}
+
+df <- diamonds |>
+  group_by(cut) |>
+  summarise(counts = n())
+ggplot(df, aes(x = cut, y = counts)) + 
+  geom_bar(fill = "#0073C2FF", stat = "identity")+
+  geom_text(aes(label = counts), vjust = -0.3)
+```
+
+
+```{r}
+#pie plots
+df <-
+  df |>
+  arrange(desc(cut)) |>
+  mutate(prop = round(counts*100/sum(counts),2),
+         lab.ypos = cumsum(prop) - 0.5 * prop)
+head(df,5)
+
+```
+
+
+```{r}
+ggplot(
+  df, aes(x = " ", y = prop, fill = cut))+
+  geom_bar(width = 1, stat = "identity", color = "white")+
+  geom_text(aes(y = lab.ypos, label = prop), color ="white")+
+  coord_polar("y", start = 0)
+#+
+ # fill_palette("viridis")+
+  #theme_dark()
+  
+  
+```
+
+```{r}
+set.seed(1234)
+wdf <-
+  data.frame(
+    gender = factor(rep(c("F", "M"), each = 200)),
+    weight = c(rnorm(200, 55), rnorm(200, 58))
+  )
+dfu <-
+  wdf |>
+  group_by(gender) |>
+  summarise(grp.mean = mean(weight))
+  
+dfu
+```
+
+```{r}
+plt <- ggplot(wdf, aes(x = weight))
+
+```
+
+```{r}
+plt + geom_density()+
+  geom_vline(aes(xintercept = mean(weight)),
+             linetype = "dashed", size = 0.6)
+#hw to fill the density curve
+```
+
+```{r}
+plt + geom_density(aes(fill = gender, alpha = 0.4)) +
+  geom_vline(aes(xintercept = mean(weight)),
+             linetype = "dashed", size = 0.6)
+```
+
+```{r}
+plt + geom_dotplot(aes(fill = gender), binwidth = 1/4)+
+  scale_fill_manual(values = c("#00AFBB", "#E7B800"))
+```
+
+```{r}
+ggplot(wdf, aes(x= factor(1), y = weight))+
+  geom_boxplot(width = 0.4, fill = "white")+
+  geom_jitter(aes(color = gender, shape = gender), width = 0.1, size = 1)+
+  scale_color_manual(values = c("#00AFBB", "#E7B800"))+
+  labs(x = NULL)
+```
+
+```{r}
+library(ggridges)
+
+ggplot(iris, aes(x = Sepal.Length, y = Species))+
+  geom_density_ridges(aes(fill = Species))
+```
+#Two variable plots
+```{r}
+diamond_df
+```
+
+```{r}
+dftwo <-
+  diamonds |>
+  filter(color %in% c("J", "D")) |>
+  group_by(cut, color) |>
+  count()
+dftwo
+#>
+ # summarise(counts = n())
+```
+
+```{r}
+P <- ggplot(dftwo, aes(x = cut, y = n))+
+  geom_bar(
+    aes(color = color, fill = color),
+    stat = "identity",
+    width = 0.7
+  ) +
+  scale_color_manual(values = c("#0073C2FF", "#EFC000FF"))
+```
+
+```{r}
+P
+```
+
+```{r}
+data("ToothGrowth")
+ToothGrowth
+ToothGrowth
+e <- ggplot(ToothGrowth, aes(x = dose, y = len))
+e + geom_boxplot(notch = TRUE, fill = "blue")+
+  stat_summary(fun.y = mean, geom = "point", shape = 18, size = 2.5)
+```
+
+```{r}
+e + geom_boxplot(aes(fill = supp))
+  
+  
+```
+
+```{r}
+library(modeldata)
+library(tidymodels)
+data(ames)
+```
+
+```{r}
+ggplot(ames, aes(x = Sale_Price))+
+  geom_histogram(bins = 50, col ="white")
+
+skimr::skim(ames)
+
+#holdout, crossvalidation, loocv, kfold
+split <- initial_split(ames, prop = 0.8)#80% training, 20% testing
+split
+```
+
+```{r}
+df_train <- training(split)
+df_test <- testing(split)
+
+dim(df_train)
+```
+
+```{r}
+split_val <- initial_validation_split(ames, prop = c(0.6,0.2))
+split_val
+```
+
+```{r}
+model <-
+linear_reg() |>
+  set_engine("lm")
+```
+
+```{r}
+model_fit <-
+  model |>
+  fit(Sale_Price ~ Longitude + Latitude, data = df_train)
+
+model_fit
+```
+

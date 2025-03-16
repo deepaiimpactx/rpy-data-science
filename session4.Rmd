@@ -1,0 +1,129 @@
+---
+title: "Session4"
+output: KNN Classifications
+---
+# Outline
+```
+1. Holdout method
+2. Idea of KNN
+3. Similarity measures
+4. Feature Scaling
+5. Tidymodels usage
+6. Recipe//Occam razor
+7. Design, Workflow, Metrics
+
+```
+
+```{r}
+library(palmerpenguins)
+library(DT)
+library(gt)
+library(tidyverse)
+library(plotly)
+library(tidymodels)
+library(yardstick)
+
+```
+
+```{r}
+#cran repositories
+#remotes::install_github("cmartin/ggConvexHull")
+library(ggConvexHull)
+```
+
+
+
+```{r}
+data("penguins")
+summary(penguins)
+glimpse(penguins)
+skimr::skim(penguins)
+datatable(penguins)
+```
+
+```{r}
+penguins <-
+  penguins |>
+  select(-c("island", "sex"))#select(c("species","bill_length_mm","bill_depth_mm","flipper_length_mm","body_mass_g "))
+```
+
+```{r}
+penguins |>
+  select(species) |>
+  group_by(species) |>
+  count() |>
+  pivot_wider(names_from = species, values_from = n) 
+```
+
+```{r}
+summary(penguins)
+naniar::gg_miss_var(penguins)
+```
+
+```{r}
+penguins <-
+  penguins |>
+  drop_na()
+summary(penguins)
+```
+
+```{r}
+plot_convex <-
+penguins |>
+  ggplot(aes(x = bill_length_mm, y = flipper_length_mm))+
+  geom_point()+
+  geom_convexhull(alpha = 0.3, aes(fill = species))
+plot_convex
+```
+# machine learning
+```{r}
+set.seed(123)
+penguins_split <- initial_split(penguins, prop = 0.8, strata = species)
+penguin_train <- training(penguins_split)
+penguin_test <- testing(penguins_split)
+```
+
+```{r}
+updated <-
+penguin_test |>
+select (-c("species"))
+library(corrplot)
+M<-cor(updated)
+corrplot(M, type = "upper")
+```
+
+
+```{r}
+knn_m <- nearest_neighbor(neighbors = 4) |>
+  set_mode("classification") |>
+  set_engine("kknn") |>#parsnip
+  fit(species ~ ., data = penguin_train)
+knn_m
+```
+
+```{r}
+knn_pred <- predict(knn_m, penguin_train) |>
+  bind_cols(penguin_train)
+```
+
+```{r}
+conf_mm <- conf_mat(knn_pred, truth = species, estimate = .pred_class)
+conf_mm
+autoplot(conf_mm, type = "heatmap")
+
+```
+
+```{r}
+accuracy(knn_pred, truth = species, estimate = .pred_class)
+
+```
+```{r}
+knn_pred <- predict(knn_m, penguin_test) |>
+  bind_cols(penguin_test)
+conf_mmm <- conf_mat(knn_pred, truth = species, estimate = .pred_class)
+conf_mm
+autoplot(conf_mmm, type = "heatmap")
+accuracy(knn_pred, truth = species, estimate = .pred_class)
+
+```
+
