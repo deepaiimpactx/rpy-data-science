@@ -1,0 +1,145 @@
+---
+title: "Session 7"
+output: Random Forest
+---
+
+```{r}
+# data wrangling
+library(tidyverse)
+library(readr)
+
+# ml
+library(caret)
+
+# plotting
+library(gridExtra)
+library(grid)
+library(ggridges)
+library(ggthemes)
+theme_set(theme_minimal())
+
+```
+
+```{r}
+wine_data <- read.csv("http://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-white.csv", sep = ";")
+glimpse(wine_data)
+wine_data <- wine_data %>%
+  mutate(quality = as.factor(ifelse(quality < 6, "qual_low", "qual_high")))
+```
+
+```{r}
+colnames(wine_data) <- gsub(" ", "_", colnames(wine_data))
+glimpse(wine_data)
+
+p1 <- wine_data %>%
+  ggplot(aes(x = quality, fill = quality)) +
+    geom_bar(alpha = 0.8) +
+    #scale_fill_tableau() +
+    guides(fill = FALSE)
+p1
+
+p2 <- wine_data %>%
+  gather(x, y, fixed.acidity:alcohol) %>%
+  ggplot(aes(x = y, y = quality, color = quality, fill = quality)) +
+    facet_wrap( ~ x, scale = "free", ncol = 3) +
+    scale_fill_tableau() +
+    scale_color_tableau() +
+    geom_density_ridges(alpha = 0.8) +
+    guides(fill = FALSE, color = FALSE)
+
+```
+
+```{r}
+grid.arrange(p1, p2, ncol = 2, widths = c(0.3, 0.7))
+
+```
+
+```{r}
+set.seed(42)
+idx <- createDataPartition(wine_data$quality, 
+                           p = 0.8, 
+                           list = FALSE, 
+                           times = 1)
+
+wine_train <- wine_data[ idx,]
+wine_test  <- wine_data[-idx,]
+```
+
+
+```{r}
+library(corrplot)
+numericVars <- which(sapply(wine_data, is.numeric))
+numericVarNames <- names(numericVars)
+cat("There are", length(numericVars), "numeric variables")
+numericVarNames
+all_numVar <- wine_data[, numericVars]
+cor_numVar <- cor(all_numVar, use = "pairwise.complete.obs")
+
+#Sort on decreasing correlations with alcohol
+cor_sorted <- as.matrix(sort(cor_numVar[,"alcohol"], decreasing = TRUE))
+
+#Selecting high correlations 
+Cor_High <- names(which(apply(cor_sorted, 1, function(x) abs(x) > 0.175)))
+cor_numVar <- cor_numVar[Cor_High, Cor_High]
+
+corrplot.mixed(cor_numVar, tl.col = "black", tl.pos = "lt")
+```
+
+
+```{r}
+fit_control <- trainControl(method = "repeatedcv",
+                           number = 5,
+                           repeats = 3)
+
+set.seed(42)
+rf_model <- train(quality ~ ., 
+                  data = wine_train, 
+                  method = "rf", 
+                  preProcess = c("scale", "center"),
+                  trControl = fit_control,
+                  verbose = FALSE)
+
+test_predict <- predict(rf_model, wine_test)
+confusionMatrix(test_predict, as.factor(wine_test$quality))
+```
+
+```{r}
+rf_model_imp <- varImp(rf_model, scale = TRUE)
+rf_model_imp$importance
+p1 <- rf_model_imp$importance %>%
+  as.data.frame() %>%
+  rownames_to_column() %>%
+  ggplot(aes(x = reorder(rowname, Overall), y = Overall)) +
+    geom_bar(stat = "identity", fill = "#1F77B4", alpha = 0.8) +
+    coord_flip()
+p1
+```
+
+```{r}
+library(iml)
+X <- wine_train %>%
+  select(-quality) %>%
+  as.data.frame()
+
+predictor <- Predictor$new(rf_model, data = X, y = wine_train$quality)
+str(predictor)
+```
+
+```{r}
+tree <- TreeSurrogate$new(predictor, maxdepth = 5)
+tree$results %>%
+  mutate(prediction = colnames(select(., .y.hat.qual_high, .y.hat.qual_low))[max.col(select(., .y.hat.qual_high, .y.hat.qual_low),
+                                                                                     ties.method = "first")],
+         prediction = ifelse(prediction == ".y.hat.qual_low", "qual_low", "qual_high")) %>%
+  ggplot(aes(x = prediction, fill = prediction)) +
+    facet_wrap(~ .path, ncol = 5) +
+    geom_bar(alpha = 0.8) +
+    scale_fill_tableau() +
+    guides(fill = FALSE)
+
+```
+
+```{r}
+
+```
+
