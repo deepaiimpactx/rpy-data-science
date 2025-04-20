@@ -1,0 +1,137 @@
+---
+title: "SESSION 5"
+output: DT Classification
+---
+
+```{r}
+library(tidymodels)
+library(modeldata)
+```
+
+
+```{r}
+data("cells")
+glimpse(cells)
+```
+
+```{r}
+set.seed(456)
+df_split <- initial_split(cells |> select(-case), strata = class)
+df_train <- training(df_split)
+df_test <- testing(df_split)
+
+```
+
+```{r}
+specs <-
+  decision_tree(
+    cost_complexity = 0.8,
+    tree_depth = 5,
+  ) |>
+  set_engine("rpart") |>
+  set_mode("classification")
+
+grid1 <-
+  grid_regular(
+    cost_complexity(),
+    tree_depth(),
+    levels = 5
+  )
+
+set.seed(123)
+df_folds <- vfold_cv(df_train)
+```
+
+```{r}
+tree1 <-
+  workflow() |>
+  add_model(specs) |>
+  add_formula(class ~ .)
+```
+
+```{r}
+tree1_res <-
+  tree1 |>
+  tune_grid(
+    resamples = df_folds,
+    grid = grid1
+  )
+
+collect_metrics(tree1_res)
+
+
+
+```
+
+```{r}
+tree1_res |>
+  collect_metrics() |>
+  mutate(tree_depth = factor(tree_depth())) |>
+  ggplot(aes(cost_complexity, mean, color = tree_depth)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 2) +
+  facet_wrap(~ .metric, scales = "free", nrow = 2) +
+  scale_x_log10(labels = scales::label_number())+
+  scale_color_viridis_b()
+```
+
+```{r}
+specs1 <-
+  decision_tree(
+    cost_complexity = tune(),
+    tree_depth = tune(),
+    min_n = tune(),
+  ) |>
+  set_engine("rpart") |>
+  set_mode("classification")
+
+grid2 <-
+  grid_regular(
+    cost_complexity(),
+    tree_depth(),
+    min_n(),
+    levels = 5
+  )
+
+set.seed(123)
+df_folds <- vfold_cv(df_train)
+```
+
+```{r}
+tree2 <-
+  workflow() |>
+  add_model(specs1) |>
+  add_formula(class ~ .)
+```
+
+```{r}
+library(doParallel)
+makeCluster(detectCores())
+
+
+tree_res2 <-
+  tree2 |>
+  tune_grid(
+    resamples = df_folds,
+    grid = grid2
+  )
+
+collect_metrics(tree_res2)
+```
+
+```{r}
+tree_res2 |>
+  collect_metrics() |>
+  mutate(tree_depth = factor(tree_depth())) |>
+  ggplot(aes(cost_complexity, mean, color = tree_depth)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 2) +
+  facet_wrap(~ .metric, scales = "free", nrow = 2) +
+  scale_x_log10(labels = scales::label_number())+
+  scale_color_viridis_b()
+```
+
+```{r}
+
+```
+

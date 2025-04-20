@@ -1,0 +1,199 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+library(tidyverse)
+library(ggpubr)
+library(corrplot)
+```
+
+```{r}
+data("mtcars")
+mtcars
+#qq plot
+ggscatter(mtcars, x = "hp", y = "carb",
+          add = "reg.line", conf.int = TRUE,
+          cor.coef = TRUE,
+          xlab = "Miles/gallon", ylab = "Weight in lbs") +
+  theme_gray()
+```
+
+```{r}
+res <- cor(mtcars)
+res
+```
+
+```{r}
+corrplot(res, type = "upper", tl.col = "black")
+```
+
+```{r}
+library(tidymodels)
+tidymodels_prefer()
+```
+
+```{r}
+data("concrete")
+glimpse(concrete)
+```
+
+```{r}
+naniar::gg_miss_var(concrete)
+concrete <-
+  concrete |>
+  group_by(across(-compressive_strength)) |>
+  summarize(compressive_strength = mean(compressive_strength), .groups = "drop")
+glimpse(concrete)
+```
+
+```{r}
+set.seed(123)
+dfsplit <- initial_split(concrete, strata = compressive_strength)
+dftrain <- training(dfsplit)
+dftest <- testing(dfsplit)
+set.seed(152)
+df_folds <-
+  vfold_cv(dftrain, strata = compressive_strength)
+df_folds
+```
+
+```{r}
+#recipes
+#all features
+rec1 <- 
+  recipe(compressive_strength ~ ., data = dftrain)|>
+  step_normalize(all_predictors())
+
+
+#poly features 
+rec2 <-
+  rec1 |>
+  step_poly(all_predictors()) |>
+  step_interact(~all_predictors():all_predictors())
+```
+
+```{r}
+library(doParallel)
+makeCluster(detectCores())
+library(rules)
+
+lin_reg <-
+  linear_reg(penalty = tune(), mixture = tune()) |>
+  set_engine("glmnet")
+
+
+svm_r <- 
+  svm_rbf(cost = tune(), rbf_sigma = tune()) |>
+  set_engine("kernlab") |>
+  set_mode("regression")
+
+
+knn <-
+  nearest_neighbor(neighbors = tune(), dist_power = tune(), weight_func = tune()) |>
+  set_engine("kknn") |>
+  set_mode("regression")
+
+
+cart <-
+  decision_tree(cost_complexity = tune(), min_n = tune()) |>
+  set_engine("rpart") |>
+  set_mode("regression")
+
+
+cubist <-
+  cubist_rules(committees = tune(), neighbors = tune())|>
+  set_engine("Cubist")
+
+#preprocessed fe
+wfset1 <-
+  workflow_set(
+    preproc = list(normalized = rec1),
+    models = list(KNN = knn, SVM_radial = svm_r)
+  )
+
+wfset1
+
+#no preprocessing , no fe, all features
+model_vars <- 
+  workflow_variables(outcomes = compressive_strength,
+                     predictors = everything())
+
+wfset2 <-
+  workflow_set(
+    preproc = list(simple = model_vars),
+    models = list(CART = cart, Cubist = cubist)
+  )
+
+
+#with FE done
+wfset3<-
+  workflow_set(
+  preproc = list(full_quad = rec2),
+  models = list(linear_reg = lin_reg, KNN_wfset3 = knn)
+)
+
+
+all_wfs <-
+  bind_rows(wfset1, wfset2, wfset3) |>
+  mutate(wflow_id = gsub("(wfset1_)|(wfset2_)","",wflow_id))
+all_wfs
+```
+
+```{r}
+grid_ctrl <-
+  control_grid(
+    save_pred = TRUE,
+    parallel_over = "everything",
+    save_workflow = TRUE
+  )
+
+grid_results <-
+  all_wfs |>
+  workflow_map(
+    seed = 1402,
+    resamples = df_folds,
+    grid = 5,
+    control = grid_ctrl
+  )
+grid_results
+```
+
+```{r}
+grid_results
+```
+
+```{r}
+grid_results |>
+  rank_results() |>
+  filter(.metric == "rmse") |>
+  select(model, .config, rmse = mean, rank)
+  
+```
+
+```{r}
+autoplot(
+  grid_results,
+  rank_metric = "rmse",
+  metric = "rmse",
+  select_best = TRUE
+) +
+  geom_text(aes( y = mean - 1/2, label = wflow_id), angle = 90, hjust = 1) +
+  lims(y = c(3.5,9.5))+
+  theme(legend.position = "none")
+```
+
+```{r}
+autoplot(grid_results, id = "normalized_KNN+", metric = "rmse")
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+

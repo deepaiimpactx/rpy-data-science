@@ -1,0 +1,108 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+
+```{r}
+library(tidyverse)
+library(tidyclust)
+library(palmerpenguins)
+```
+
+```{r}
+glimpse(penguins)
+```
+
+```{r}
+ggplot(penguins, aes(x = flipper_length_mm, y = bill_length_mm, fill = species, color = species))+
+  geom_point()
+```
+
+```{r}
+df <-
+  penguins |>
+  select(-c(species,sex, island)) |>
+  na.omit()
+glimpse(df)
+```
+
+```{r}
+library(recipes)
+kmeans_rec <-
+  recipe(~., data = df) |>
+  step_scale(all_predictors()) |>
+  step_center(all_predictors())
+kmeans_rec
+```
+
+```{r}
+kmeans_spec <- k_means(num_clusters = tune()) |>
+  set_engine("stats", nstart = 10)
+kmeans_spec
+```
+
+```{r}
+library(tidymodels)
+
+df_iter <- tibble(num_clusters = 1:9)
+
+
+kmeans_final <- workflow() |>
+  add_recipe(kmeans_rec) |>
+  add_model(kmeans_spec) |>
+  tune_cluster(resamples = apparent(df), grid = df_iter) |>
+  collect_metrics() 
+
+kmeans_final
+```
+
+```{r}
+newdata <- kmeans_final |>
+  augment(df)
+newdata
+```
+
+```{r}
+library(cluster)
+library(factoextra)
+```
+
+```{r}
+df <- USArrests
+summary(df)
+
+df <- scale(df)
+dist <- get_dist(df)
+fviz_dist(dist)
+```
+
+```{r}
+k_m <- kmeans(df, centers = 2, nstart = 10)
+k_m
+```
+
+```{r}
+fviz_cluster(k_m, data = df)
+```
+
+```{r}
+k1 <- kmeans(df, centers = 3, nstart = 10)
+k2 <- kmeans(df, centers = 4, nstart = 10)
+k3 <- kmeans(df, centers = 5, nstart = 10)
+```
+
+```{r}
+p1 <- fviz_cluster(k_m, geom = "point", data = df) + ggtitle(" k = 2")
+p2 <- fviz_cluster(k1, geom = "point", data = df) + ggtitle(" k = 3")
+p3 <- fviz_cluster(k2, geom = "point", data = df) + ggtitle(" k = 4")
+p4 <- fviz_cluster(k3, geom = "point", data = df) + ggtitle(" k = 5")
+
+fviz_nbclust(df, kmeans, method = "gap_stat")
+```
+
+```{r}
+
+```
+
