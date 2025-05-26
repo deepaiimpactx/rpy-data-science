@@ -1,0 +1,159 @@
+---
+title: "Session 11"
+output: html_notebook
+---
+```{r}
+library(iml) # interpretable ml
+library(MASS)
+data("Boston")
+library(tidyverse)
+glimpse(Boston)
+set.seed(45)
+```
+
+
+```{r}
+summary(Boston)
+library(randomForest)
+
+```
+
+```{r}
+library(rpart)
+rf <- rpart(medv ~ ., data = Boston)
+```
+
+```{r}
+rpart.plot::rpart.plot(rf)
+```
+
+```{r}
+x <- Boston[-which(names(Boston) == "medv")]
+rf_model <- Predictor$new(rf, data = x)
+```
+
+
+```{r}
+x.interest  <- x[1,]
+shapiml <- Shapley$new(rf_model, x.interest = x.interest)
+shapiml
+kableExtra::kable(shapiml$results)
+plot(shapiml)
+```
+
+```{r}
+shapiml$explain(x[2,])
+plot(shapiml)
+```
+
+```{r}
+library(xgboost)
+library(data.table)
+library(ggplot2)
+library(SHAPforxgboost)
+data <- read.csv("diabetes.csv")
+glimpse(X1)
+data$Outcome <- as.factor(data$Outcome)
+```
+
+
+```{r}
+X1 = as.matrix(data[,-9])
+modxg <- xgboost(data = X1, label = data$Outcome, gamma = 0, eta = 1, lambda = 0, nrounds = 1, verbose = F)
+shap_values <- shap.values(xgb_model = modxg, X_train = X1)
+shap_values$mean_shap_score
+```
+
+```{r}
+shap_values_diab <- shap_values$shap_score
+shap_lev_diab <- shap.prep(xgb_model = modxg, X_train = X1)
+shap_lev_diab2 <- shap.prep(shap_contrib = shap_values_diab, X_train = X1)
+```
+
+```{r}
+shap.plot.summary(shap_lev_diab2)
+```
+
+```{r}
+shap.plot.summary.wrap1(modxg, X1, top_n = 5)
+
+```
+
+```{r}
+shap.plot.summary.wrap2(shap_score = shap_values$shap_score, X1, top_n = 5)
+```
+
+```{r}
+plot_force_data <- shap.prep.stack.data(shap_contrib = shap_values_diab, n_groups = 4)
+plot_force_data2 <- shap.prep.stack.data(shap_contrib = shap_values_diab, n_groups = 5)
+plot_force_data3 <- shap.prep.stack.data(shap_contrib = shap_values_diab, n_groups = 7)
+```
+
+```{r}
+shap.plot.force_plot(plot_force_data)
+```
+
+```{r}
+shap.plot.force_plot_bygroup(plot_force_data3)
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
